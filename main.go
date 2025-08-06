@@ -31,5 +31,7 @@ router := routes.InitializeRoutes()
 
 // Start the server
 log.Printf("Starting server on port %s...\n", port)
-http.ListenAndServe(":"+port, router)
+if err := http.ListenAndServe(":"+port, router); err != nil {
+	log.Fatalf("Server failed to start: %v", err)
+}
 }
