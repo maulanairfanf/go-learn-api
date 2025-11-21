@@ -1,51 +1,45 @@
 package middleware
 
 import (
-	"context"
 	"myapi/models"
-	"net/http"
 	"os"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 )
 
-// JWTMiddleware is a middleware function that checks the presence and validity of a JWT token
-func JWTMiddleware(next http.Handler) http.Handler {
-	jwtSecret := []byte(os.Getenv("JWT_SECRET")) // Change this to your secret key
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
+// JWTMiddlewareGin returns a Gin middleware for JWT authentication
+func JWTMiddlewareGin() gin.HandlerFunc {
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			http.Error(w, "Authorization header is required", http.StatusUnauthorized)
+			c.AbortWithStatusJSON(401, gin.H{"error": "Authorization header is required"})
 			return
 		}
 
-		// Check if the token is a Bearer token
 		if !strings.HasPrefix(authHeader, "Bearer ") {
-			http.Error(w, "Invalid token format", http.StatusUnauthorized)
+			c.AbortWithStatusJSON(401, gin.H{"error": "Invalid token format"})
 			return
 		}
 
-		// Extract the token
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		// Parse the token
 		token, err := jwt.ParseWithClaims(tokenString, &models.Claims{}, func(token *jwt.Token) (interface{}, error) {
 			return jwtSecret, nil
 		})
 
 		if err != nil || !token.Valid {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			c.AbortWithStatusJSON(401, gin.H{"error": "Invalid token"})
 			return
 		}
 
-		// Extract user ID from token claims
 		if claims, ok := token.Claims.(*models.Claims); ok && token.Valid {
-			ctx := context.WithValue(r.Context(), "userID", claims.UserID)
-			next.ServeHTTP(w, r.WithContext(ctx))
+			c.Set("userID", claims.UserID)
+			c.Next()
 		} else {
-			http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+			c.AbortWithStatusJSON(401, gin.H{"error": "Invalid token claims"})
 			return
 		}
-	})
+	}
 }

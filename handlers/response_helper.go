@@ -1,8 +1,7 @@
 package handlers
 
 import (
-	"encoding/json"
-	"net/http"
+	"github.com/gin-gonic/gin"
 )
 
 type APIResponse struct {
@@ -10,23 +9,16 @@ type APIResponse struct {
 	Data   interface{} `json:"data"`
 }
 
-func SuccessResponse(w http.ResponseWriter, data interface{}) {
-	response := APIResponse{
-		Status: http.StatusOK,
+func SuccessResponse(c *gin.Context, data interface{}) {
+	c.JSON(200, APIResponse{
+		Status: 200,
 		Data:   data,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	})
 }
 
-func ErrorResponse(w http.ResponseWriter, status int, message string) {
-	response := APIResponse{
+func ErrorResponse(c *gin.Context, status int, message string) {
+	c.JSON(status, APIResponse{
 		Status: status,
-		Data: map[string]string{
-			"error": message,
-		},
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(response)
+		Data:   gin.H{"error": message},
+	})
 }

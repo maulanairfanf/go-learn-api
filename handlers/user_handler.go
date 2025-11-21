@@ -1,14 +1,13 @@
 package handlers
 
 import (
-	"encoding/json"
 	"myapi/db"
 	"myapi/models"
-	"net/http"
 	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -29,38 +28,29 @@ type LoginResponse struct {
 	Token string `json:"token"`
 }
 
+
 // Login handles user authentication and issues a JWT token upon successful login
-func Login(w http.ResponseWriter, r *http.Request) {
-    var loginReq LoginRequest
-
-    // Decode the JSON request body into the LoginRequest struct
-    if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
-        ErrorResponse(w, http.StatusBadRequest, "Invalid request payload")
-        return
-    }
-
-    // Check if the user exists
-    var user models.User
-    if err := db.DB.Where("username = ?", loginReq.Username).First(&user).Error; err != nil {
-        ErrorResponse(w, http.StatusUnauthorized, "Invalid username or password")
-        return
-    }
-
-    // Verify the password
-    if !checkPasswordHash(loginReq.Password, user.Password) {
-        ErrorResponse(w, http.StatusUnauthorized, "Invalid username or password")
-        return
-    }
-
-    // Generate a JWT token
-    token, err := generateJWTToken(user.ID)
-    if err != nil {
-        ErrorResponse(w, http.StatusInternalServerError, "Failed to generate token")
-        return
-    }
-
-    // Send the token in the response
-    SuccessResponse(w, LoginResponse{Token: token})
+func Login(c *gin.Context) {
+	var loginReq LoginRequest
+	if err := c.ShouldBindJSON(&loginReq); err != nil {
+		ErrorResponse(c, 400, "Invalid request payload")
+		return
+	}
+	var user models.User
+	if err := db.DB.Where("username = ?", loginReq.Username).First(&user).Error; err != nil {
+		ErrorResponse(c, 401, "Invalid username or password")
+		return
+	}
+	if !checkPasswordHash(loginReq.Password, user.Password) {
+		ErrorResponse(c, 401, "Invalid username or password")
+		return
+	}
+	token, err := generateJWTToken(user.ID)
+	if err != nil {
+		ErrorResponse(c, 500, "Failed to generate token")
+		return
+	}
+	SuccessResponse(c, LoginResponse{Token: token})
 }
 
 // checkPasswordHash verifies if a password matches its hashed version

@@ -3,39 +3,42 @@ package routes
 import (
 	"myapi/handlers"
 	"myapi/middleware"
-	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 )
 
-// InitializeRoutes sets up the router with all the routes and middleware
-func InitializeRoutes() *mux.Router {
-	router := mux.NewRouter()
-
+// InitializeRoutes sets up the Gin router with all the routes and middleware
+func InitializeRoutes() *gin.Engine {
+	router := gin.Default()
 
 	// Root endpoint for health check or welcome message
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Welcome to Go Learn API!"))
-	}).Methods("GET")
+	router.GET("/", func(c *gin.Context) {
+		c.String(200, "Welcome to Go Learn API!")
+	})
 
 	// Define routes
-	router.HandleFunc("/login", handlers.Login).Methods("POST")
+	router.POST("/login", handlers.Login)
 
-	router.Handle("/products", withJWT(handlers.GetProducts)).Methods("GET")
-	router.Handle("/products/{id}", withJWT(handlers.GetProduct)).Methods("GET")
-	router.Handle("/products", withJWT(handlers.CreateProduct)).Methods("POST")
-	router.Handle("/product/{id}", withJWT(handlers.DeleteProduct)).Methods("DELETE")
-	router.Handle("/product/{id}", withJWT(handlers.UpdateProduct)).Methods("PUT")
+	product := router.Group("/products")
+	product.Use(middleware.JWTMiddlewareGin())
+	{
+		product.GET("", handlers.GetProducts)
+		product.GET(":id", handlers.GetProduct)
+		product.POST("", handlers.CreateProduct)
+	}
 
-	router.Handle("/category",  withJWT(handlers.CreateCategory)).Methods("POST")
-	router.Handle("/category", withJWT(handlers.GetCategories)).Methods("GET")
-	router.Handle("/category/{id}", withJWT(handlers.GetCategories)).Methods("GET")
+	router.DELETE("/product/:id", middleware.JWTMiddlewareGin(), handlers.DeleteProduct)
+	router.PUT("/product/:id", middleware.JWTMiddlewareGin(), handlers.UpdateProduct)
+
+	category := router.Group("/category")
+	category.Use(middleware.JWTMiddlewareGin())
+	{
+		category.POST("", handlers.CreateCategory)
+		category.GET("", handlers.GetCategories)
+		category.GET(":id", handlers.GetCategory)
+	}
 
 	return router
 }
 
-// withJWT is a helper function to wrap handlers with the JWT middleware
-func withJWT(handler http.HandlerFunc) http.Handler {
-	return middleware.JWTMiddleware(handler)
-}
+
