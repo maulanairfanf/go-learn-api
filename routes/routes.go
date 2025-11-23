@@ -19,23 +19,25 @@ func InitializeRoutes() *gin.Engine {
 	// Define routes
 	router.POST("/login", handlers.Login)
 
-	product := router.Group("/products")
+	product := router.Group("/product")
 	product.Use(middleware.JWTMiddlewareGin())
 	{
 		product.GET("", handlers.GetProducts)
 		product.GET(":id", handlers.GetProduct)
 		product.POST("", handlers.CreateProduct)
+		router.DELETE(":id", middleware.JWTMiddlewareGin(), handlers.DeleteProduct)
+		router.PUT(":id", middleware.JWTMiddlewareGin(), handlers.UpdateProduct)
 	}
 
-	router.DELETE("/product/:id", middleware.JWTMiddlewareGin(), handlers.DeleteProduct)
-	router.PUT("/product/:id", middleware.JWTMiddlewareGin(), handlers.UpdateProduct)
 
 	category := router.Group("/category")
 	category.Use(middleware.JWTMiddlewareGin())
 	{
-		category.POST("", handlers.CreateCategory)
 		category.GET("", handlers.GetCategories)
 		category.GET(":id", handlers.GetCategory)
+		category.POST("", handlers.CreateCategory)
+		category.PUT(":id", handlers.UpdateCategory)
+		category.DELETE(":id", handlers.DeleteCategory)
 	}
 
 	return router

@@ -12,3 +12,12 @@ type Product struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
+
+
+type CreateProductRequest struct {
+	Name        string `json:"name"`
+	Quantity    int    `json:"quantity"`
+	Categories  []uint `json:"categories"`
+	Price       string `json:"price"`
+	Description string `json:"description"`
+}

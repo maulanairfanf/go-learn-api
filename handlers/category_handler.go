@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"myapi/db"
 	"myapi/models"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // GetCategories handles retrieving all categories
@@ -23,17 +25,18 @@ func GetCategories(c *gin.Context) {
 func GetCategory(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		ErrorResponse(c, 400, "Invalid category ID")
+		ErrorResponse(c, 400, "Invalid Category ID")
 		return
 	}
+
 	var category models.Category
 	if err := db.DB.First(&category, id).Error; err != nil {
 		ErrorResponse(c, 404, "Category not found")
 		return
 	}
+
 	SuccessResponse(c, category)
 }
-
 
 // CreateCategory handles the creation of a new category
 func CreateCategory(c *gin.Context) {
@@ -47,4 +50,66 @@ func CreateCategory(c *gin.Context) {
 		return
 	}
 	SuccessResponse(c, category)
+}
+
+// UpdateCategory handles the update of a category
+func UpdateCategory(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		ErrorResponse(c, 400, "Invalid Category ID")
+		return
+	}
+
+	var category models.Category
+	if err := db.DB.First(&category, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ErrorResponse(c, 404, "Category not found")
+			return
+		} else {
+			ErrorResponse(c, 500, err.Error())
+			return
+		}
+	}
+
+	var req models.CreateCategoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ErrorResponse(c, 400, "Invalid request payload")
+		return
+	}
+
+	category.Name = req.Name
+
+	if err := db.DB.Save(&category).Error; err != nil {
+		ErrorResponse(c, 500, err.Error())
+		return
+	}
+
+	SuccessResponse(c, category)
+}
+
+
+func DeleteCategory(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		ErrorResponse(c, 400, "Invalid Category Id")
+		return
+	}
+
+	var category models.Category
+	if err := db.DB.First(&category, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ErrorResponse(c, 404, "Category not found")
+			return
+		} else {
+			ErrorResponse(c, 500, err.Error())
+			return
+		}
+	}
+
+	if err := db.DB.Delete(&category, id).Error; err != nil {
+		ErrorResponse(c, 500, err.Error())
+		return
+	}
+
+	SuccessResponse(c, "Category deleted successfully")
 }

@@ -36,31 +36,50 @@ func GetProduct(c *gin.Context) {
 	SuccessResponse(c, product)
 }
 
-
-// CreateProduct handles the creation of a new product
 func CreateProduct(c *gin.Context) {
-	var product models.Product
-	if err := c.ShouldBindJSON(&product); err != nil {
+	var req models.CreateProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		ErrorResponse(c, 400, "Invalid request payload")
 		return
 	}
+
+	var categories []models.Category
+	if len(req.Categories) > 0 {
+		if err := db.DB.Where("id IN ?", req.Categories).Find(&categories).Error; err != nil {
+			ErrorResponse(c, 400, "Invalid category IDs")
+			return
+		}
+	}
+
+	product := models.Product{
+		Name:        req.Name,
+		Quantity:    req.Quantity,
+		Categories:  categories,
+		Price:       req.Price,
+		Description: req.Description,
+	}
+
 	if err := db.DB.Create(&product).Error; err != nil {
 		ErrorResponse(c, 500, err.Error())
 		return
 	}
+
+	db.DB.Preload("Categories").First(&product, product.ID)
 	SuccessResponse(c, product)
 }
 
 
 // UpdateProduct handles the update of an existing product
+
 func UpdateProduct(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		ErrorResponse(c, 400, "Invalid product ID")
 		return
 	}
+
 	var product models.Product
-	if err := db.DB.First(&product, id).Error; err != nil {
+	if err := db.DB.Preload("Categories").First(&product, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ErrorResponse(c, 404, "Product not found")
 		} else {
@@ -68,14 +87,34 @@ func UpdateProduct(c *gin.Context) {
 		}
 		return
 	}
-	if err := c.ShouldBindJSON(&product); err != nil {
+
+	var req models.CreateProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		ErrorResponse(c, 400, "Invalid request payload")
 		return
 	}
+
+	// Update fields
+	product.Name = req.Name
+	product.Quantity = req.Quantity
+	product.Price = req.Price
+	product.Description = req.Description
+
+	// Update categories
+	var categories []models.Category
+	if len(req.Categories) > 0 {
+		if err := db.DB.Where("id IN ?", req.Categories).Find(&categories).Error; err != nil {
+			ErrorResponse(c, 400, "Invalid category IDs")
+			return
+		}
+	}
+	db.DB.Model(&product).Association("Categories").Replace(categories)
+
 	if err := db.DB.Save(&product).Error; err != nil {
 		ErrorResponse(c, 500, err.Error())
 		return
 	}
+	db.DB.Preload("Categories").First(&product, product.ID)
 	SuccessResponse(c, product)
 }
 

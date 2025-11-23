@@ -9,3 +9,6 @@ type Category struct {
 	UpdatedAt time.Time
 }
 
+type CreateCategoryRequest struct {
+	Name string `gorm:"type:varchar(100);not null"`
+}
