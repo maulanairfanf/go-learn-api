@@ -3,14 +3,29 @@ package repositories
 import (
 	"myapi/db"
 	"myapi/models"
+	"myapi/utils"
 )
 
 type ProductRepository struct{}
 
-func (r *ProductRepository) FindAll() ([]models.Product, error) {
+func (r *ProductRepository) FindAll(pagination utils.PaginationRequest, search string, sort string, order string) ([]models.Product, int64, error) {
 	var products []models.Product
-	err := db.DB.Preload("Categories").Find(&products).Error
-	return products, err
+	var total int64
+
+	query := db.DB.Model(&models.Product{})
+
+	if search != "" {
+		query = query.Where("name ILIKE ?", "%"+search+"%")
+	}
+
+	if sort != "" {
+		query = query.Order(sort + " " + order)
+	}
+
+	query = utils.ApplyPagination(query, pagination, &total)
+	err := query.Preload("Categories").Find(&products).Error
+
+	return products, total, err
 }
 
 func (r *ProductRepository) FindByID(id int) (*models.Product, error) {
@@ -47,4 +62,24 @@ func (r *ProductRepository) Delete(product *models.Product) error {
 
 func (r *ProductRepository) PreloadCategories(product *models.Product) error {
 	return db.DB.Preload("Categories").First(product, product.ID).Error
+}
+
+func (r *ProductRepository) ExistsSlug(slug string, excludeID uint) (bool, error) {
+	var count int64
+
+	err := db.DB.Model(&models.Product{}).
+		Where("slug = ? AND id <> ?", slug, excludeID).
+		Count(&count).Error
+
+	return count > 0, err
+}
+
+func (r *ProductRepository) ExistsSku(sku string, excludeID uint) (bool, error) {
+	var count int64
+
+	err := db.DB.Model(&models.Product{}).
+		Where("sku = ? AND id <> ?", sku, excludeID).
+		Count(&count).Error
+
+	return count > 0, err
 }

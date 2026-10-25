@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"myapi/models"
 	"myapi/repositories"
+	"myapi/utils"
 )
 
 type UserService struct {
@@ -16,8 +17,8 @@ func NewUserService() *UserService {
 	}
 }
 
-func (s *UserService) GetAll() ([]models.User, error) {
-	return s.repo.FindAll()
+func (s *UserService) GetAll(pagination utils.PaginationRequest, search string, sort string, order string) ([]models.User, int64, error) {
+	return s.repo.FindAll(pagination, search, sort, order)
 }
 
 func (s *UserService) GetByID(id int) (*models.User, error) {

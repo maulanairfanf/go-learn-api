@@ -4,6 +4,7 @@ import (
 	"errors"
 	"myapi/models"
 	"myapi/services"
+	"myapi/utils"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -13,12 +14,27 @@ import (
 var userService = services.NewUserService()
 
 func GetUsers(c *gin.Context) {
-	users, err := userService.GetAll()
+	var pagination utils.PaginationRequest
+	c.ShouldBindQuery(&pagination)
+	// pagination.SetDefault()
+
+	search := c.Query("search")
+	sort := c.Query("sort")
+	order := c.Query("order")
+
+	users, total, err := userService.GetAll(pagination, search, sort, order)
 	if err != nil {
 		ErrorResponse(ErrorParams{C: c, Status: 500, Message: err.Error()})
 		return
 	}
-	SuccessResponse(SuccessParams{C: c, Data: users, Message: "success"})
+
+	var meta *utils.PaginationMeta
+	if pagination.IsPaginated() {
+		m := pagination.ComputeMeta(total)
+		meta = &m
+	}
+
+	SuccessResponse(ResponseParams{C: c, Data: users, Message: "success", Meta: meta})
 }
 
 func GetUser(c *gin.Context) {
@@ -37,7 +53,7 @@ func GetUser(c *gin.Context) {
 		}
 		return
 	}
-	SuccessResponse(SuccessParams{C: c, Data: user, Message: "success"})
+	SuccessResponse(ResponseParams{C: c, Data: user, Message: "success"})
 }
 
 func DeleteUser(c *gin.Context) {
@@ -56,7 +72,7 @@ func DeleteUser(c *gin.Context) {
 		}
 		return
 	}
-	SuccessResponse(SuccessParams{C: c, Data: user, Message: "success"})
+	SuccessResponse(ResponseParams{C: c, Data: user, Message: "success"})
 }
 
 func UpdateUser(c *gin.Context) {
@@ -83,5 +99,5 @@ func UpdateUser(c *gin.Context) {
 		}
 		return
 	}
-	SuccessResponse(SuccessParams{C: c, Data: user, Message: "success"})
+	SuccessResponse(ResponseParams{C: c, Data: user, Message: "success"})
 }

@@ -25,7 +25,7 @@ func GetOrders(c *gin.Context) {
 		responses[i] = order.ToResponse()
 	}
 
-	SuccessResponse(SuccessParams{C: c, Data: responses, Message: "Success Get Orders"})
+	SuccessResponse(ResponseParams{C: c, Data: responses, Message: "Success Get Orders"})
 }
 
 func GetOrder(c *gin.Context) {
@@ -45,7 +45,7 @@ func GetOrder(c *gin.Context) {
 		return
 	}
 
-	SuccessResponse(SuccessParams{C: c, Data: order.ToResponse(), Message: "Success Get Order"})
+	SuccessResponse(ResponseParams{C: c, Data: order.ToResponse(), Message: "Success Get Order"})
 }
 
 func CreateOrder(c *gin.Context) {
@@ -69,7 +69,7 @@ func CreateOrder(c *gin.Context) {
 		return
 	}
 
-	SuccessResponse(SuccessParams{C: c, Data: order.ToResponse(), Message: "Success Create Order"})
+	SuccessResponse(ResponseParams{C: c, Data: order.ToResponse(), Message: "Success Create Order"})
 }
 
 func PayOrder(c *gin.Context) {
@@ -91,7 +91,7 @@ func PayOrder(c *gin.Context) {
 		return
 	}
 
-	SuccessResponse(SuccessParams{C: c, Data: order, Message: "Success update to paid"})
+	SuccessResponse(ResponseParams{C: c, Data: order, Message: "Success update to paid"})
 }
 
 func CancelOrder(c *gin.Context) {
@@ -113,7 +113,7 @@ func CancelOrder(c *gin.Context) {
 		return
 	}
 
-	SuccessResponse(SuccessParams{C: c, Data: order, Message: "Success update to cancel"})
+	SuccessResponse(ResponseParams{C: c, Data: order, Message: "Success update to cancel"})
 }
 
 func DeleteOrder(c *gin.Context) {
@@ -133,5 +133,5 @@ func DeleteOrder(c *gin.Context) {
 		return
 	}
 
-	SuccessResponse(SuccessParams{C: c, Data: order.ToResponse(), Message: "Success delete order"})
+	SuccessResponse(ResponseParams{C: c, Data: order.ToResponse(), Message: "Success delete order"})
 }

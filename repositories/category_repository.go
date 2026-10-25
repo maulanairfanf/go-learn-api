@@ -3,14 +3,33 @@ package repositories
 import (
 	"myapi/db"
 	"myapi/models"
+	"myapi/utils"
 )
 
 type CategoryRepository struct{}
 
-func (r *CategoryRepository) FindAll() ([]models.Category, error) {
+func (r *CategoryRepository) FindAll(pagination utils.PaginationRequest, search string, sort string, order string) ([]models.Category, int64, error) {
 	var categories []models.Category
-	err := db.DB.Find(&categories).Error
-	return categories, err
+	var total int64
+
+	query := db.DB.Model(&models.Category{})
+
+	if search != "" {
+		query = query.Where("name ILIKE ?", "%"+search+"%")
+	}
+
+	if sort != "" {
+		query = query.Order(sort + " " + order)
+	}
+
+	query = utils.ApplyPagination(query, pagination, &total)
+	err := query.Find(&categories).Error
+
+	if !pagination.IsPaginated() {
+		total = int64(len(categories))
+	}
+
+	return categories, total, err
 }
 
 func (r *CategoryRepository) FindByID(id int) (*models.Category, error) {

@@ -48,6 +48,7 @@ func InitializeRoutes() *gin.Engine {
 		category.POST("", handlers.CreateCategory)
 		category.PUT(":id", handlers.UpdateCategory)
 		category.DELETE(":id", handlers.DeleteCategory)
+		category.PATCH(":id", handlers.ChangeStatus)
 	}
 
 	order := router.Group("/order")

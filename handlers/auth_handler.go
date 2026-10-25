@@ -48,7 +48,7 @@ func Login(c *gin.Context) {
 		ErrorResponse(ErrorParams{C: c, Status: 500, Message: "Failed to generate token"})
 		return
 	}
-	SuccessResponse(SuccessParams{C: c, Data: LoginResponse{Token: token}, Message: "success"})
+	SuccessResponse(ResponseParams{C: c, Data: LoginResponse{Token: token}, Message: "success"})
 }
 
 func Register(c *gin.Context) {
@@ -70,5 +70,5 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	SuccessResponse(SuccessParams{C: c, Data: "Success Registration", Message: "success"})
+	SuccessResponse(ResponseParams{C: c, Data: "Success Registration", Message: "success"})
 }

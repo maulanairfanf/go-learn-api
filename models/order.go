@@ -35,17 +35,17 @@ type CategoryResponse struct {
 	Name string `json:"name"`
 }
 
-type ProductResponse struct {
+type OrderProductResponse struct {
 	ID         uint               `json:"id"`
 	Name       string             `json:"name"`
 	Categories []CategoryResponse `json:"categories"`
 }
 
 type OrderItemResponse struct {
-	ID       uint            `json:"id"`
-	Product  ProductResponse `json:"product"`
-	Quantity int             `json:"quantity"`
-	Price    float64         `json:"price"`
+	ID       uint                 `json:"id"`
+	Product  OrderProductResponse `json:"product"`
+	Quantity int                  `json:"quantity"`
+	Price    float64              `json:"price"`
 }
 
 type OrderResponse struct {
@@ -67,7 +67,7 @@ func (o *Order) ToResponse() OrderResponse {
 
 		items[i] = OrderItemResponse{
 			ID: item.ID,
-			Product: ProductResponse{
+			Product: OrderProductResponse{
 				ID:         item.Product.ID,
 				Name:       item.Product.Name,
 				Categories: categories,

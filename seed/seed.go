@@ -4,7 +4,6 @@ import (
 	"log"
 	"myapi/db"
 	"myapi/models"
-	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -12,19 +11,14 @@ import (
 func main() {
 	db.Init()
 
-	// Seed users
 	seedUsers()
-
-	// Seed categories
 	seedCategories()
-
-	// Seed products
 	seedProducts()
+	seedOrder()
 
 	log.Println("Seed data created successfully")
 }
 
-// hashPassword hashes the given password using bcrypt
 func hashPassword(password string) string {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -34,23 +28,14 @@ func hashPassword(password string) string {
 }
 
 func seedUsers() {
-	// Create users
+	if db.DB.Find(&models.User{}).RowsAffected > 0 {
+		log.Println("Users already exist, skipping")
+		return
+	}
+
 	users := []models.User{
-		{
-			Username:  "user1",
-			Password:  hashPassword("password1"),
-			Email:     "user1@example.com",
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		},
-		{
-			Username:  "user2",
-			Password:  hashPassword("password2"),
-			Email:     "user2@example.com",
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		},
-		// Add more users as needed
+		{Username: "admin", Password: hashPassword("admin123"), Email: "admin@example.com"},
+		{Username: "user1", Password: hashPassword("password1"), Email: "user1@example.com"},
 	}
 
 	for _, user := range users {
@@ -58,13 +43,20 @@ func seedUsers() {
 			log.Fatalf("Failed to create user: %v", err)
 		}
 	}
+	log.Println("Users seeded")
 }
 
 func seedCategories() {
+	if db.DB.Find(&models.Category{}).RowsAffected > 0 {
+		log.Println("Categories already exist, skipping")
+		return
+	}
+
 	categories := []models.Category{
-		{Name: "Category 1", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-		{Name: "Category 2", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-		// Add more categories as needed
+		{Name: "Elektronik"},
+		{Name: "Pakaian"},
+		{Name: "Makanan"},
+		{Name: "Gaming"},
 	}
 
 	for _, category := range categories {
@@ -72,40 +64,88 @@ func seedCategories() {
 			log.Fatalf("Failed to create category: %v", err)
 		}
 	}
+	log.Println("Categories seeded")
 }
 
 func seedProducts() {
-	// Retrieve categories
+	if db.DB.Find(&models.Product{}).RowsAffected > 0 {
+		log.Println("Products already exist, skipping")
+		return
+	}
+
 	var categories []models.Category
-	if err := db.DB.Find(&categories).Error; err != nil {
-		log.Fatalf("Failed to retrieve categories: %v", err)
+	db.DB.Find(&categories)
+	catMap := make(map[string]models.Category)
+	for _, c := range categories {
+		catMap[c.Name] = c
 	}
 
-	products := []models.Product{
-		{
-			Name:        "Product 1",
-			Quantity:    10,
-			Categories:  []models.Category{categories[0]}, // Assign the first category to Product 1
-			Price:       200000,
-			Description: "Description of Product 1",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		},
-		{
-			Name:        "Product 2",
-			Quantity:    20,
-			Categories:  []models.Category{categories[1]}, // Assign the second category to Product 2
-			Price:       1000000,
-			Description: "Description of Product 2",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		},
-		// Add more products as needed
+	products := []struct {
+		Name       string
+		Qty        int
+		Price      float64
+		Desc       string
+		Categories []string
+	}{
+		{"Laptop Gaming", 10, 15000000, "Laptop gaming 16GB RAM RTX4060", []string{"Elektronik", "Gaming"}},
+		{"Kemeja Flanel", 50, 150000, "Kemeja flanel kotak-kotak", []string{"Pakaian"}},
+		{"Snack Keripik", 100, 10000, "Keripik kentang pedas", []string{"Makanan"}},
+		{"Mouse Wireless", 30, 250000, "Mouse gaming wireless ringan", []string{"Elektronik", "Gaming"}},
 	}
 
-	for _, product := range products {
+	for _, p := range products {
+		var cats []models.Category
+		for _, name := range p.Categories {
+			if c, ok := catMap[name]; ok {
+				cats = append(cats, c)
+			}
+		}
+
+		product := models.Product{
+			Name:        p.Name,
+			Quantity:    p.Qty,
+			Price:       p.Price,
+			Description: p.Desc,
+			Categories:  cats,
+		}
 		if err := db.DB.Create(&product).Error; err != nil {
 			log.Fatalf("Failed to create product: %v", err)
 		}
 	}
+	log.Println("Products seeded")
+}
+
+func seedOrder() {
+	if db.DB.Find(&models.Order{}).RowsAffected > 0 {
+		log.Println("Orders already exist, skipping")
+		return
+	}
+
+	var user models.User
+	if err := db.DB.First(&user).Error; err != nil {
+		log.Println("No user found, skipping order seed")
+		return
+	}
+
+	var products []models.Product
+	db.DB.Find(&products)
+	if len(products) < 2 {
+		log.Println("Not enough products, skipping order seed")
+		return
+	}
+
+	order := models.Order{
+		UserID:     user.ID,
+		TotalPrice: products[0].Price*2 + products[1].Price*1,
+		Status:     "pending",
+		Items: []models.OrderItem{
+			{ProductID: products[0].ID, Quantity: 2, Price: products[0].Price},
+			{ProductID: products[1].ID, Quantity: 1, Price: products[1].Price},
+		},
+	}
+
+	if err := db.DB.Create(&order).Error; err != nil {
+		log.Fatalf("Failed to create order: %v", err)
+	}
+	log.Println("Orders seeded")
 }

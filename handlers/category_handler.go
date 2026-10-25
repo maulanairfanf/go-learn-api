@@ -4,6 +4,7 @@ import (
 	"errors"
 	"myapi/models"
 	"myapi/services"
+	"myapi/utils"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -13,12 +14,30 @@ import (
 var categoryService = services.NewCategoryService()
 
 func GetCategories(c *gin.Context) {
-	categories, err := categoryService.GetAll()
+	var pagination utils.PaginationRequest
+	c.ShouldBindQuery(&pagination)
+	// pagination.SetDefault()
+
+	search := c.Query("search")
+	sort := c.Query("sort")
+	order := c.Query("order")
+
+	categories, total, err := categoryService.GetAll(pagination, search, sort, order)
 	if err != nil {
 		ErrorResponse(ErrorParams{C: c, Status: 500, Message: err.Error()})
 		return
 	}
-	SuccessResponse(SuccessParams{C: c, Data: categories, Message: "success"})
+	var meta *utils.PaginationMeta
+	if pagination.IsPaginated() {
+		m := pagination.ComputeMeta(total)
+		meta = &m
+	}
+	SuccessResponse(ResponseParams{
+		C:       c,
+		Data:    categories,
+		Message: "success",
+		Meta:    meta,
+	})
 }
 
 func GetCategory(c *gin.Context) {
@@ -37,7 +56,7 @@ func GetCategory(c *gin.Context) {
 		}
 		return
 	}
-	SuccessResponse(SuccessParams{C: c, Data: category, Message: "success"})
+	SuccessResponse(ResponseParams{C: c, Data: category, Message: "success"})
 }
 
 func CreateCategory(c *gin.Context) {
@@ -52,7 +71,7 @@ func CreateCategory(c *gin.Context) {
 		ErrorResponse(ErrorParams{C: c, Status: 500, Message: err.Error()})
 		return
 	}
-	SuccessResponse(SuccessParams{C: c, Data: category, Message: "success"})
+	SuccessResponse(ResponseParams{C: c, Data: category, Message: "success"})
 }
 
 func UpdateCategory(c *gin.Context) {
@@ -77,7 +96,7 @@ func UpdateCategory(c *gin.Context) {
 		}
 		return
 	}
-	SuccessResponse(SuccessParams{C: c, Data: category, Message: "success"})
+	SuccessResponse(ResponseParams{C: c, Data: category, Message: "success"})
 }
 
 func DeleteCategory(c *gin.Context) {
@@ -96,5 +115,24 @@ func DeleteCategory(c *gin.Context) {
 		}
 		return
 	}
-	SuccessResponse(SuccessParams{C: c, Data: "Category deleted successfully", Message: "success"})
+	SuccessResponse(ResponseParams{C: c, Data: "Category deleted successfully", Message: "success"})
+}
+
+func ChangeStatus(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		ErrorResponse(ErrorParams{C: c, Status: 400, Message: "Invalid Category Id"})
+		return
+	}
+
+	_, err = categoryService.ChangeStatus(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ErrorResponse(ErrorParams{C: c, Status: 404, Message: "Category not found"})
+		} else {
+			ErrorResponse(ErrorParams{C: c, Status: 500, Message: err.Error()})
+		}
+		return
+	}
+	SuccessResponse(ResponseParams{C: c, Data: "Category status changed successfully", Message: "success"})
 }

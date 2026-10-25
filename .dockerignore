@@ -1,0 +1,6 @@
+.env
+tmp/
+.git/
+*.md
+context/
+.gitignore

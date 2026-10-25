@@ -3,6 +3,7 @@ package services
 import (
 	"myapi/models"
 	"myapi/repositories"
+	"myapi/utils"
 )
 
 type CategoryService struct {
@@ -15,8 +16,8 @@ func NewCategoryService() *CategoryService {
 	}
 }
 
-func (s *CategoryService) GetAll() ([]models.Category, error) {
-	return s.repo.FindAll()
+func (s *CategoryService) GetAll(pagination utils.PaginationRequest, search string, sort string, order string) ([]models.Category, int64, error) {
+	return s.repo.FindAll(pagination, search, sort, order)
 }
 
 func (s *CategoryService) GetByID(id int) (*models.Category, error) {
@@ -26,6 +27,7 @@ func (s *CategoryService) GetByID(id int) (*models.Category, error) {
 func (s *CategoryService) Create(req models.CreateCategoryRequest) (*models.Category, error) {
 	category := models.Category{
 		Name: req.Name,
+		Slug: req.Slug,
 	}
 
 	if err := s.repo.Create(&category); err != nil {
@@ -42,6 +44,7 @@ func (s *CategoryService) Update(id int, req models.CreateCategoryRequest) (*mod
 	}
 
 	category.Name = req.Name
+	category.Slug = req.Slug
 
 	if err := s.repo.Save(category); err != nil {
 		return nil, err
@@ -58,5 +61,24 @@ func (s *CategoryService) Delete(id int) (*models.Category, error) {
 	if err := s.repo.Delete(category); err != nil {
 		return nil, err
 	}
+	return category, nil
+}
+
+func (s *CategoryService) ChangeStatus(id int) (*models.Category, error) {
+	category, err := s.repo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if category.Status == "active" {
+		category.Status = "inactive"
+	} else {
+		category.Status = "active"
+	}
+
+	if err := s.repo.Save(category); err != nil {
+		return nil, err
+	}
+
 	return category, nil
 }

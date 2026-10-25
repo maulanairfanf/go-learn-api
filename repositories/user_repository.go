@@ -3,16 +3,36 @@ package repositories
 import (
 	"myapi/db"
 	"myapi/models"
+	"myapi/utils"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserRepository struct{}
 
-func (r *UserRepository) FindAll() ([]models.User, error) {
+func (r *UserRepository) FindAll(pagination utils.PaginationRequest, search string, sort string, order string) ([]models.User, int64, error) {
 	var user []models.User
-	err := db.DB.Find(&user).Error
-	return user, err
+	var total int64
+
+	query := db.DB.Model(&models.User{})
+
+	if search != "" {
+		query = query.Where("username ILIKE ?", "%"+search+"%")
+	}
+
+	if sort != "" {
+		query = query.Order(sort + " " + order)
+	}
+
+	query = utils.ApplyPagination(query, pagination, &total)
+
+	err := query.Find(&user).Error
+
+	if !pagination.IsPaginated() {
+		total = int64(len(user))
+	}
+
+	return user, total, err
 }
 
 func (r *UserRepository) FindByID(id int) (*models.User, error) {
