@@ -183,3 +183,35 @@ func ValidationFileSize(c *gin.Context, file *multipart.FileHeader, err error) b
 
 	return true
 }
+
+func UpdatePublicationStatus(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		ErrorResponse(ErrorParams{
+			C:       c,
+			Status:  400,
+			Message: "Invalid Product ID",
+		})
+	}
+
+	var req models.UpdateProductPublicationStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ErrorResponse(ErrorParams{C: c, Status: 400, Message: "Invalid request payload"})
+		return
+	}
+
+	product, err := productService.UpdatePublicationStatus(c.Request.Context(), id, req)
+	if err != nil {
+		if errors.Is(err, services.ErrInvalidStatus) {
+			ErrorResponse(ErrorParams{
+				C:       c,
+				Status:  400,
+				Message: err.Error(),
+			})
+		} else {
+			ErrorResponse(ErrorParams{C: c, Status: 500, Message: err.Error()})
+		}
+	}
+
+	SuccessResponse(ResponseParams{C: c, Data: product, Message: "Success Updated Publication Status"})
+}

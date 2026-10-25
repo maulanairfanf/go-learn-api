@@ -13,7 +13,7 @@ type Product struct {
 	Price             float64    `json:"price"`
 	Description       string     `gorm:"type:text" json:"description"`
 	Sku               string     `gorm:"type:varchar(100);not null; unique;" json:"sku"`
-	PublicationStatus string     `gorm:"type:varchar(20);not null;default:pending" json:"publication_status"`
+	PublicationStatus string     `gorm:"type:varchar(20);not null;default:draft" json:"publication_status"`
 	// Tags              []string   `json:"tags"`
 	Image string `gorm:"type:text" json:"image"`
 	Metadata
@@ -60,4 +60,8 @@ type ProductResponse struct {
 
 type UpdateQuantityPayload struct {
 	Quantity int `json:"quantity"`
+}
+
+type UpdateProductPublicationStatusRequest struct {
+	PublicationStatus string `json:"publication_status" binding:"required,oneof=active archived"`
 }

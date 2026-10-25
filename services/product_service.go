@@ -261,6 +261,27 @@ func (s *ProductService) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
+func (s *ProductService) UpdatePublicationStatus(ctx context.Context, id int, req models.UpdateProductPublicationStatusRequest) (*models.Product, error) {
+	product, err := s.repo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.PublicationStatus != "active" &&
+		req.PublicationStatus != "archived" {
+		return nil, ErrInvalidStatus
+	}
+
+	product.PublicationStatus = req.PublicationStatus
+
+	err = s.repo.Save(product)
+	if err != nil {
+		return nil, err
+	}
+
+	return product, err
+}
+
 func mapProductConflict(err error) error {
 	var pgErr *pgconn.PgError
 

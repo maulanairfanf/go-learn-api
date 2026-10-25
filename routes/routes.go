@@ -18,37 +18,46 @@ func InitializeRoutes() *gin.Engine {
 	})
 
 	// Define routes
-	router.POST("/login", handlers.Login)
-	router.POST("/register", handlers.Register)
+	router.POST("/admin/login", handlers.Login)
+	router.POST("/admin/register", handlers.Register)
 
-	user := router.Group("/user")
-	user.Use(middleware.JWTMiddlewareGin())
+	adminUser := router.Group("/admin/user")
+	adminUser.Use(middleware.JWTMiddlewareGin())
 	{
-		user.GET("", handlers.GetUsers)
-		user.GET(":id", handlers.GetUser)
-		user.PUT(":id", handlers.UpdateUser)
-		user.DELETE(":id", handlers.DeleteUser)
+		adminUser.GET("", handlers.GetUsers)
+		adminUser.GET(":id", handlers.GetUser)
+		adminUser.PUT(":id", handlers.UpdateUser)
+		adminUser.DELETE(":id", handlers.DeleteUser)
 	}
 
-	product := router.Group("/product")
-	product.Use(middleware.JWTMiddlewareGin())
+	products := router.Group("/products")
+	products.GET("", handlers.GetPublicProducts)
+	products.GET(":slug", handlers.GetPublicProductBySlug)
+
+	adminProducts := router.Group("/admin/products")
+	adminProducts.Use(middleware.JWTMiddlewareGin())
 	{
-		product.GET("", handlers.GetProducts)
-		product.GET(":id", handlers.GetProduct)
-		product.POST("", handlers.CreateProduct)
-		product.DELETE(":id", handlers.DeleteProduct)
-		product.PUT(":id", handlers.UpdateProduct)
+		adminProducts.GET("", handlers.GetProducts)
+		adminProducts.GET(":id", handlers.GetProduct)
+		adminProducts.POST("", handlers.CreateProduct)
+		adminProducts.DELETE(":id", handlers.DeleteProduct)
+		adminProducts.PUT(":id", handlers.UpdateProduct)
+		adminProducts.PATCH(":id/publication_status", handlers.UpdatePublicationStatus)
 	}
 
-	category := router.Group("/category")
-	category.Use(middleware.JWTMiddlewareGin())
+	categories := router.Group("/categories")
+	categories.GET("", handlers.GetPublicCategories)
+	categories.GET(":slug", handlers.GetPublicCategoriesBySlug)
+
+	adminCategory := router.Group("/admin/categories")
+	adminCategory.Use(middleware.JWTMiddlewareGin())
 	{
-		category.GET("", handlers.GetCategories)
-		category.GET(":id", handlers.GetCategory)
-		category.POST("", handlers.CreateCategory)
-		category.PUT(":id", handlers.UpdateCategory)
-		category.DELETE(":id", handlers.DeleteCategory)
-		category.PATCH(":id", handlers.ChangeStatus)
+		adminCategory.GET("", handlers.GetCategories)
+		adminCategory.GET(":id", handlers.GetCategory)
+		adminCategory.POST("", handlers.CreateCategory)
+		adminCategory.PUT(":id", handlers.UpdateCategory)
+		adminCategory.DELETE(":id", handlers.DeleteCategory)
+		adminCategory.PATCH(":id", handlers.ChangeStatus)
 	}
 
 	order := router.Group("/order")
